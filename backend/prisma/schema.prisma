@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Classification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+
+  @@map("bern_classification")
+}
+
+enum PipelineStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+
+  @@map("bern_pipeline_status")
+}
+
+enum IssueStatus {
+  OPEN
+  RESOLVED
+  QUARANTINED
+  ACCEPTED
+
+  @@map("bern_issue_status")
+}
+
+model SourceTenancy {
+  id         String  @id @default(uuid())
+  externalId String  @unique
+  tenantId   String?
+  tenantName String?
+  unitCode   String?
+  email      String?
+  phone      String?
+  leaseStart String?
+  leaseEnd   String?
+  status     String?
+
+  @@map("bern_src_tenancy")
+}
+
+model SourceBilling {
+  id         String   @id @default(uuid())
+  externalId String   @unique
+  tenantId   String?
+  tenantName String?
+  unitCode   String?
+  period     String?
+  dueDate    String?
+  amountDue  Decimal? @db.Decimal(12, 2)
+  amountPaid Decimal? @db.Decimal(12, 2)
+
+  @@map("bern_src_billing")
+}
+
+model SourceMaintenance {
+  id          String  @id @default(uuid())
+  externalId  String  @unique
+  tenantId    String?
+  tenantName  String?
+  unitCode    String?
+  description String?
+  openedAt    String?
+  status      String?
+
+  @@map("bern_src_maintenance")
+}
+
+model SourceVisitorLog {
+  id          String  @id @default(uuid())
+  externalId  String  @unique
+  tenantId    String?
+  tenantName  String?
+  unitCode    String?
+  visitorName String?
+  enteredAt   String?
+
+  @@map("bern_src_visitor_log")
+}
+
+model PipelineRun {
+  id             String             @id @default(uuid())
+  status         PipelineStatus     @default(RUNNING)
+  startedAt      DateTime           @default(now())
+  finishedAt     DateTime?
+  extracted      Int                @default(0)
+  loaded         Int                @default(0)
+  quarantined    Int                @default(0)
+  deduplicated   Int                @default(0)
+  error          String?
+  stages         PipelineStageLog[]
+  rows           StagingRow[]
+  qualityResults QualityResult[]
+  issues         QualityIssue[]
+  lineage        FieldLineage[]
+
+  @@map("bern_pipeline_run")
+}
+
+model PipelineStageLog {
+  id        String      @id @default(uuid())
+  runId     String
+  run       PipelineRun @relation(fields: [runId], references: [id])
+  source    String
+  stage     String
+  rowCount  Int         @default(0)
+  message   String?
+  createdAt DateTime    @default(now())
+
+  @@map("bern_pipeline_stage_log")
+}
+
+model StagingRow {
+  id       String         @id @default(uuid())
+  runId    String
+  run      PipelineRun    @relation(fields: [runId], references: [id])
+  source   String
+  sourceId String
+  payload  Json
+  status   String
+  reason   String?
+  issues   QualityIssue[]
+
+  @@unique([runId, source, sourceId])
+  @@map("bern_staging_row")
+}
+
+model Tenant {
+  id         String  @id @default(uuid())
+  externalId String  @unique
+  name       String
+  email      String?
+  phone      String?
+  leases     Lease[]
+
+  @@map("bern_tenant")
+}
+
+model Unit {
+  id       String               @id @default(uuid())
+  code     String               @unique
+  leases   Lease[]
+  ledger   DuesLedger[]
+  requests MaintenanceRequest[]
+  visitors VisitorEntry[]
+
+  @@map("bern_unit")
+}
+
+model Lease {
+  id        String    @id @default(uuid())
+  sourceKey String    @unique
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  unitId    String
+  unit      Unit      @relation(fields: [unitId], references: [id])
+  startDate DateTime
+  endDate   DateTime?
+  status    String
+
+  @@map("bern_lease")
+}
+
+model DuesLedger {
+  id         String   @id @default(uuid())
+  sourceKey  String   @unique
+  unitId     String
+  unit       Unit     @relation(fields: [unitId], references: [id])
+  period     String
+  dueDate    DateTime
+  amountDue  Decimal  @db.Decimal(12, 2)
+  amountPaid Decimal  @db.Decimal(12, 2)
+  balance    Decimal  @default(0) @db.Decimal(12, 2)
+  monthsOverdue Int   @default(0)
+
+  @@map("bern_dues_ledger")
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(uuid())
+  sourceKey   String   @unique
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id])
+  description String
+  openedAt    DateTime
+  status      String
+  daysOpen    Int @default(0)
+
+  @@map("bern_maintenance_request")
+}
+
+model VisitorEntry {
+  id          String   @id @default(uuid())
+  sourceKey   String   @unique
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id])
+  visitorName String
+  enteredAt   DateTime
+
+  @@map("bern_visitor_entry")
+}
+
+model FieldLineage {
+  id       String      @id @default(uuid())
+  entity   String
+  entityId String
+  field    String
+  source   String
+  sourceId String
+  runId    String
+  method   String @default("source")
+  run      PipelineRun @relation(fields: [runId], references: [id])
+
+  @@unique([runId, entity, entityId, field, source, sourceId])
+  @@map("bern_field_lineage")
+}
+
+model QualityRule {
+  id         String          @id @default(uuid())
+  code       String          @unique
+  title      String
+  dimension  String
+  severity   String
+  enabled    Boolean         @default(true)
+  parameters Json            @default("{}")
+  results    QualityResult[]
+  issues     QualityIssue[]
+
+  @@map("bern_quality_rule")
+}
+
+model QualityResult {
+  id      String      @id @default(uuid())
+  runId   String
+  run     PipelineRun @relation(fields: [runId], references: [id])
+  ruleId  String
+  rule    QualityRule @relation(fields: [ruleId], references: [id])
+  checked Int
+  passed  Int
+  failed  Int
+  definition Json @default("{}")
+
+  @@unique([runId, ruleId])
+  @@map("bern_quality_result")
+}
+
+model QualityIssue {
+  id        String      @id @default(uuid())
+  runId     String
+  run       PipelineRun @relation(fields: [runId], references: [id])
+  ruleId    String
+  rule      QualityRule @relation(fields: [ruleId], references: [id])
+  stagingId String?
+  staging   StagingRow? @relation(fields: [stagingId], references: [id])
+  severity  String
+  status    IssueStatus @default(OPEN)
+  message   String
+  note      String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("bern_quality_issue")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  permissions String[]
+  users       User[]
+
+  @@map("bern_role")
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String
+  passwordHash String
+  credentialVersion Int @default(0)
+  securityQuestion String?
+  securityAnswerHash String?
+  securityFailures Int @default(0)
+  securityLockedUntil DateTime?
+  active       Boolean @default(true)
+  roleId       String
+  role         Role    @relation(fields: [roleId], references: [id])
+  sessions     Session[]
+  recoveryCodes PasswordRecovery[]
+
+  @@map("bern_user")
+}
+
+model Session {
+  id        String @id @default(uuid())
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String @unique
+  expiresAt DateTime
+  credentialVersion Int @default(0)
+  @@index([expiresAt])
+  @@map("bern_session")
+}
+
+model PasswordRecovery {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuedById String
+  tokenHash String @unique
+  credentialVersion Int
+  expiresAt DateTime
+  usedAt DateTime?
+  revokedAt DateTime?
+  attempts Int @default(0)
+  createdAt DateTime @default(now())
+  @@index([userId, expiresAt])
+  @@map("bern_password_recovery")
+}
+
+model Policy {
+  id          String                @id @default(uuid())
+  name        String                @unique
+  description String
+  fields      FieldClassification[]
+
+  @@map("bern_policy")
+}
+
+model DataOwner {
+  id     String                @id @default(uuid())
+  name   String                @unique
+  fields FieldClassification[]
+
+  @@map("bern_data_owner")
+}
+
+model FieldClassification {
+  id             String         @id @default(uuid())
+  entity         String
+  field          String
+  classification Classification
+  source         String
+  ownerId        String
+  owner          DataOwner      @relation(fields: [ownerId], references: [id])
+  policyId       String
+  policy         Policy         @relation(fields: [policyId], references: [id])
+
+  @@unique([entity, field])
+  @@map("bern_field_classification")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("bern_audit_log")
+}
+
+model SourceDisposition {
+  id        String @id @default(uuid())
+  source    String
+  sourceId  String
+  note      String
+  actorId   String
+  createdAt DateTime @default(now())
+  @@unique([source, sourceId])
+  @@map("bern_source_disposition")
+}

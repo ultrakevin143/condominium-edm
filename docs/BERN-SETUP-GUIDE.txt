@@ -1,0 +1,238 @@
+BERN CONDO EDM - WINDOWS SETUP GUIDE
+Bisaya guide para sa first-time nga mogamit
+
+1. UNSA NI NGA PROJECT?
+
+Condo data demonstration ni. Gihiusa niya ang tenancy, billing,
+maintenance ug visitor records. Fictional ang residents ug amounts.
+Wala ni nag-process ug actual payments.
+
+Ang frontend mao ang makita sa browser. Ang backend mao ang mo-check
+sa requests, permissions ug data. PostgreSQL mao ang database.
+
+2. ASA MAG-OPEN UG CMD?
+
+Kinahanglan adunay Node.js 22.12 pataas ug npm.
+Sa CMD, tan-awa una:
+
+node --version
+npm --version
+
+Adto sa project root, dili sa frontend o backend subfolder:
+
+cd /d "C:\Users\Hp\Desktop\bern project"
+
+Kung naa sa laing location ang copy, ilisi ang path. Ang sakto nga
+folder adunay package.json, package-lock.json, frontend ug backend.
+
+3. FIRST-TIME SETUP LANG
+
+Sa project root:
+
+npm ci
+npm run setup:local
+npm run db:generate
+npm run db:local
+
+Hulata ang "Local PostgreSQL ready on port 54349".
+Ayaw sirad-i kini nga terminal samtang gigamit ang app.
+
+Abli ug IKADUHANG CMD. Adto gihapon sa project root, dayon:
+
+npm run db:migrate
+npm run db:seed
+npm run dev:local
+
+Sa browser, ablihi:
+
+http://localhost:3400
+
+Ang root dev/dev:local command maoy mag-start sa duha ka workspace:
+frontend sa 3400 ug backend sa 4400.
+Ang database naa sa separate terminal sa 54349.
+
+4. ASA IBUTANG ANG .env?
+
+Sa PROJECT ROOT:
+
+bern project/
+  .env
+  package.json
+  frontend/
+  backend/
+
+Ayaw ibutang ang database password sa frontend source code.
+Ang setup:local maghimo sa ignored .env kung wala pa kini.
+Kung naa nay .env, dili niya ilisan.
+
+Ang ordinary npm run dev / npm start mogamit sa root runtime .env.
+Neon mode kinahanglan pooled/direct URLs, TLS, schema=bern_hub,
+BERN_DATABASE_TARGET=neon ug BERN_NEON_HOST nga direct endpoint pin.
+Private ang actual values. Ayaw gamita ang John/Jomari URLs.
+Preserved ang local configuration sa .local\local.env.
+
+5. ASA ANG LOGIN ACCOUNTS?
+
+Ablihi sa Notepad ang:
+
+.local\development-access.txt
+
+Private kana nga file. Naa didto ang five demo accounts ug ilang
+generated demonstration password. Wala ang password niini nga guide.
+
+Property manager, Data steward, Finance, Front desk/Security ug Viewer
+ang five roles. Gamita ang assigned account aron makita ang limits.
+
+Sa fresh local setup sa lain nga PC, mahimong lahi ang generated
+password. Ang account note sa MAONG PC maoy sundon.
+Kung configured Neon runtime ang gigamit, shared ang provisioned accounts.
+
+Kung naa nay existing .env pero wala ang private account note, pangayoa
+ang sakto nga private access details sa project owner. Ayaw i-delete
+ang configuration o database aron lang makagama ug bag-ong password.
+Ang seed rerun dili mo-reset sa existing passwords.
+
+6. KADA ADLAW NGA PAG-OPEN
+
+Neon runtime, usa ka CMD sa project root:
+
+npm run dev
+
+Walay kinahanglan nga local PostgreSQL server para niini.
+Ayaw pag-run ug remote provisioning/migration sa matag startup.
+Naa na sa Neon ang authorized shared fictional demo: 237 source rows
+ug usa ka initialization pipeline. Ayaw i-repeat ang remote demo import.
+Tan-awa ang docs\neon-runtime.md.
+
+Para sa LOCAL fictional demonstration:
+
+CMD 1, sa project root:
+
+npm run db:local
+
+CMD 2, sa project root:
+
+npm run dev:local
+
+Dili kinahanglan mag-npm ci, migrate ug seed sa matag open.
+Migrate kung adunay bag-ong migration. Install dependencies kung
+bag-o ang copy o adunay dependency changes.
+
+Kung imong sirad-an ang terminal gamit Ctrl+C, moundang ang service
+nga gipadagan niini. Pabilin ang saved local database sa .local.
+
+7. UNSAON PAG-DEMO?
+
+Sign in isip Property manager.
+Sa Pipeline, i-click ang Run pipeline.
+Sa Tenants & units, pangitaa si Maria ug ablihi ang iyang record.
+Sa Data quality, tan-awa ang actual rule scores.
+Sa Issue queue, pili ug issue, correct field, reason ug Save decision.
+Sa Governance, tan-awa ang catalog, permissions, policies ug audit.
+
+Ang warehouse mahimong walay records hangtod modagan ang pipeline.
+Expected ang partial result kay adunay deliberate source defects.
+Ang seed dili reset: preserved ang previous corrections ug accounts.
+
+Adunay detalyadong live-demo steps sa docs\instructor-demo.md.
+Ang reviewer ug explanation naa sa docs\BERN-REVIEWER-BISAYA.txt.
+
+8. REPEATABLE TEST SA FRESH DATA
+
+Install browser once kung wala pa:
+
+npx playwright install chromium
+
+Run from the root:
+
+npm run test:acceptance
+
+Maghimo kini ug disposable local test database. Dili kini mo-clear sa
+imong regular demo records ug dili kini motarget sa Neon.
+Test database: 54350; test frontend/API: 3450/4450.
+Ayaw pagdungan ug duha ka database/browser test commands kay pareho
+silag dedicated test ports.
+
+Result summary: .local\acceptance-results.txt
+Browser screenshots: .local\acceptance-evidence\
+Automatic mo-stop ang test servers/database human sa run.
+
+Other checks:
+npm run lint
+npm run typecheck
+npm test
+npm run test:integration
+npm run test:browser
+
+9. PRODUCTION-MODE LOCAL DEMO
+
+Keep the local database running. Sa ikaduhang terminal:
+
+npm run build
+npm run start:local
+
+Pareho gihapon ang browser URL: http://localhost:3400
+Para sa configured Neon production mode, npm start ang gamiton.
+Choose usa lang ka dev/start mode sa usa ka higayon kay pareho ug ports.
+
+10. KUNG ADUNAY PROBLEMA
+
+"npm is not recognized": check Node.js/npm installation; reopen CMD.
+"EADDRINUSE": gigamit na ang port. Tan-awa kung naa pay Bern terminal.
+Ayaw i-stop tanan Node processes kay basin laing project ang nagdagan.
+Database error: check CMD 1 ug root .env; ayaw i-post ang secret values.
+Empty tenant list: run the pipeline with a permitted account.
+403: walay permission ang account o sayop ang request origin.
+Gamita ang documented localhost:3400 browser URL.
+409: stale issue/role/policy o busy pipeline; reload the latest data.
+422: invalid input o wala masulbad ang selected rule; basaha ang message.
+429: login/pipeline rate limit; hulat, ayaw sige balik-balik ug click.
+
+11. KUNG IPA-COPY ANG PROJECT
+
+Ihatag ang source, package files, migrations, .env.example ug guides.
+Para sa shared Neon runtime: npm ci, npm run db:generate, private root
+.env gikan sa owner, dayon npm run dev. Dili na kinahanglan i-provision
+pag-usab ang remote accounts o mag-start ug local PostgreSQL.
+Ayaw i-public ang .env o .local. Ayaw iapil ang node_modules,
+.next ug backend/dist sa source handoff; mahimo silang regenerate.
+Walay Git publication o deployment nga gihimo alang sa Bern.
+
+12. PASSWORD CHANGE UG RECOVERY
+
+Sa Account security, una i-set imong kaugalingong question ug answer
+gamit ang current password. Kung ilisan ang existing question,
+kinahanglan usab ang daang answer. Mo-sign out tanan sessions human save.
+
+Sa Change password, ihatag ang current password, security answer ug
+bag-ong password (15-128 characters), dayon confirm. Dili na sakto ang
+original account note alang nianang account human mausab ang password.
+Kung shared Neon account, mausab usab ang password para sa classmates
+nga naggamit sa pareho nga account. Local mode gamita sa repeat demos.
+
+Kung nalimtan ang password, adto sa Forgot password. Pangayo ug
+verification sa Property manager. Ang manager kinahanglan una adunay
+kaugalingong question sa Account security. Sa Governance > Account
+roles > Manage recovery, iya i-prove iyang password/answer ug isulat
+ang non-sensitive identity verification note. I-share niya ang code
+privately; 15 minutes ra kini ug usa ra ka successful use.
+I-enter sa requester ang email/code, answer kung naa, ug new password.
+Walay automatic email/SMS. Dili makita sa admin ang stored answer.
+
+Kung nalimtan usab ang answer, mahimong i-clear sa administrator
+human identity verification, dayon mo-issue ug bag-ong recovery code.
+Ang requester maoy mopili sa replacement question/answer.
+Dili puwedeng self-recovery sa manager controls. Ang sole manager nga
+nawad-an sa tanang proof kinahanglan tabangan sa trusted system owner.
+
+Five failed verification attempts maka-lock sa sensitive changes sulod
+sa 15 minutes. Ang wrong recovery answer lima ra ka attempts per code.
+Ang shared school network mahimong maka-hit usab sa IP request limit.
+Ayaw i-spam ang forms; hulata ang limit window kung 429 ang response.
+Supplementary knowledge check ang question, dili independent MFA.
+
+npm run test:security = isolated local API ug browser security checks.
+Ayaw i-run parallel sa ubang integration/browser suites.
+Tan-awa docs\account-security.md para sa code ug API map.
+
+Kini nga guide walay passwords o database connection credentials.

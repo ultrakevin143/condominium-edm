@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.local/
+.next/
+dist/
+*.tsbuildinfo
+coverage/
+
+# Temporary Office lock files and superseded SRS copies; publish the Revised copy.
+~$*
+docs/Bern_Condominium_EDM_Software_Requirements_Specification.docx
+docs/Condominium_EDM_Software_Requirements_Specification.docx

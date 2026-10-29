@@ -1,0 +1,462 @@
+BERN CONDO EDM - REVIEWER UG CODE WALKTHROUGH
+Para sa Grade 12 learner nga bag-o pa sa programming
+
+1. MUBO NGA INTRO NGA MAHIMONG ISULTI
+
+"Ang among project usa ka fictional condo EDM demonstration. Adunay
+upat ka sources: tenancy, billing, maintenance ug visitor logs.
+Gihiusa namo ang parehas nga tenant bisan lahi ang spelling o unit
+format. Gi-check namo ang quality, gi-record ang problems ug gi-limit
+ang data depende sa role sa user. Adunay audit trail sa importanteng
+actions."
+
+EDM = Enterprise Data Management. Pag-organize ug pagdumala sa data
+aron mas kasaligan ug klaro kung kinsa ang makagamit niini.
+
+Tulo ka pillars:
+Integration = pagkuha ug paghiusa sa lain-laing sources.
+DQM = pag-check, pag-score ug pag-correct sa data quality.
+Governance = rules kung kinsa ang naay access ug kinsa ang responsible.
+
+2. SIMPLE NGA EXAMPLE
+
+Sa tenancy: Maria Santos, unit 12A.
+Sa billing: MARIA SANTOS, unit 12-A.
+Sa maintenance: Maria S. Santos, Unit 12 A.
+Sa visitor log: Maria Santos, unit 12-A.
+
+Parehas nga tenant kini sa fictional fixtures. Human sa pipeline,
+usa ra si Maria ug 12-A ang canonical unit. Ang tenant ID maoy unang
+gamiting identity. Kung walay ID, kinahanglan klaro ug unique ang
+name/unit match. Dili igo nga pareho lang ug first name.
+
+Ang lineage nag-ingon asa gikan ang matag field. Dili pasabot nga
+ang tanang sources maoy supplied sa tanang values. Ang tenancy maoy
+authoritative source sa tenant name; ang billing maoy financial data.
+
+3. UNSAY FRONTEND, BACKEND UG DATABASE?
+
+Frontend: screens, buttons, forms ug tables sa browser.
+Backend: modawat sa requests, mo-check sa input ug permissions,
+magpadagan sa business logic ug makig-istorya sa database.
+Database: persistent storage sa accounts, sources, warehouse ug logs.
+
+Next.js/React/TypeScript ang frontend.
+Express/TypeScript ang backend.
+Prisma ang database access tool; PostgreSQL ang database.
+
+Ang Bern adunay configured Neon runtime ug preserved local demo.
+Ordinary startup mogamit sa root .env; dev:local sa local configuration.
+Neon adunay five shared accounts, catalog metadata ug ang authorized
+237-row fictional source import. Ang first pipeline kay 206 loaded,
+30 quarantined, 1 duplicate removed, 92.18% actual quality score.
+Automated tests ug repeat demonstration fixtures local gihapon.
+
+4. ASA MANGITA SA CODE?
+
+frontend/app/page.tsx = landing entry; mo-open sa Pipeline workspace.
+frontend/app/[section]/page.tsx = allowed workspace routes.
+frontend/app/layout.tsx = page shell, metadata ug global styles.
+frontend/app/globals.css = colors, spacing, layout ug responsive styles.
+
+frontend/src/app-shell/workspace.tsx = session, login ug navigation.
+frontend/src/features/ = actual screens, usa ka feature matag folder.
+frontend/src/shared/ui/ = reusable Button, Input ug scrollable Table.
+frontend/src/shared/api/ = typed API client ug response contracts.
+frontend/src/shared/data-view.tsx = loading/error/empty/table helpers.
+
+backend/src/server.ts = configuration, runtime database guard ug startup.
+backend/src/config/environment.ts = root o preserved local env loader.
+backend/src/app.ts = Express setup, auth endpoints, routes ug errors.
+backend/src/modules/ = feature logic: pipeline, quality, issues,
+warehouse, governance ug authentication.
+backend/src/middleware/ = authentication ug permission checks.
+backend/src/database/client.ts = shared Prisma client.
+backend/prisma/schema.prisma = database models ug relations.
+backend/prisma/migrations/ = versioned database changes.
+backend/prisma/seed-data.ts = local fixtures ug shared provisionAccess().
+backend/scripts/ = setup, migration helpers ug isolated test runners.
+backend/tests/ ug frontend/tests/ = automated tests.
+
+Ang docs/project-map.md adunay mas dali pang file map.
+Ang public assets, kung adunay idugang, ibutang sa frontend/public/.
+
+5. UNSAON PAG-TRAVEL SA USA KA REQUEST?
+
+Example: gi-click ang Run pipeline.
+
+PipelineScreen -> shared send() -> browser /api/pipeline/runs
+-> Next rewrite -> Express /pipeline/runs
+-> authentication() -> requirePermission()
+-> controller.start -> runPipeline() -> pipelineWork()
+-> Prisma/PostgreSQL -> response -> screen reload.
+
+Ang request dili diretso gikan sa browser ngadto sa database.
+Ang database password wala sa frontend bundle.
+Ang server mo-check sa permission bisan direct API call ang buhaton.
+
+6. DATA LAYERS: HUNAHUNAA NGA MGA TRAY
+
+Source tray: original messy simulated records. Adunay duplicates,
+missing fields, invalid dates ug inconsistent unit formats.
+Staging tray: extracted snapshot kada run, uban ang source ug run ID.
+Warehouse tray: accepted, normalized Tenant, Unit, Lease, DuesLedger,
+MaintenanceRequest ug VisitorEntry records.
+
+PipelineRun = usa ka execution sa process.
+PipelineStageLog = rows ug messages sa matag source/stage.
+QualityRule = definition sa check.
+QualityResult = checked/passed/failed counts sa usa ka rule ug run.
+QualityIssue = specific failed observation nga mahimong reviewhon.
+FieldLineage = source ug processing history sa usa ka warehouse field.
+AuditLog = kinsa, unsa, kanus-a ug before/after sa importanteng action.
+
+Consistent bern_ prefixes ang physical tables aron klaro ang ownership.
+
+7. LOGIN UG SECURITY FUNCTIONS
+
+Sa shared/security.ts:
+hashPassword() - naghimo ug random salt ug scrypt hash.
+verifyPassword() - mo-compute ug compare sa submitted password.
+newToken() - naghimo ug random session token.
+tokenHash() - SHA-256 fingerprint sa token para sa database storage.
+
+IMPORTANT: scrypt ang actual password method sa Bern, dili bcrypt.
+Hashing dili encryption nga i-decrypt aron makuha balik ang password.
+Ang login nag-verify sa supplied value batok sa stored salted hash.
+Ang session token fingerprint lahi sa password hash.
+
+Sa auth.service.ts, login():
+validate email/password -> find active account -> verifyPassword()
+-> create session ug LOGIN audit in one transaction -> return profile.
+Dili mo-return ang password hash sa frontend.
+
+Sa app.ts, ang session cookie kay HttpOnly ug SameSite Strict.
+Secure flag gamiton kung HTTPS ang configured origin.
+12 hours ang session expiry. Adunay login rate limit.
+Ang logout motangtang sa session ug mo-record ug LOGOUT.
+
+authentication() motan-aw sa cookie fingerprint, session expiry,
+active user ug current role sa database.
+requirePermission() maoy route-level permission check.
+authorize() mo-check pag-usab sulod sa importanteng transaction.
+
+8. ETL: EXTRACT, TRANSFORM, LOAD
+
+Extract: sa pipeline/adapters.ts, ang adapters magbasa sa upat ka
+source tables. Ang pack() maghimo ug consistent source/payload format.
+
+Transform: sa pipeline/transform.ts:
+normalizeUnit() - 12A o Unit 12 A mahimong 12-A; invalid format -> null.
+nameKey() - comparison form sa name; dili decorative display text.
+namesMatch() - mo-check sa compatible names/middle initials.
+fallbackId() - fallback name/unit identity kung walay source tenant ID.
+displayName() - readable capitalization ug spacing.
+parseDate() - supported ISO o DD/MM/YYYY; dili mag-guess ug MM/DD.
+validEmail() - email format check pinaagi sa validation library.
+money() - allowed nonnegative decimal representation.
+digest() - stable fingerprint; makatabang detect sa changed source.
+stableId() - repeatable identifier gikan sa canonical identity.
+ageDays() ug monthsOverdue() - derived age/month calculations.
+prepare() - nag-apply sa matching, validity, duplicates ug conflicts.
+
+Missing middle initial mahimong match kung unambiguous; conflicting
+initials dili basta i-merge. Invalid tenancy dili mahimong proof of
+identity alang sa ubang source row.
+
+Sa pipeline.service.ts:
+lockPipeline() - usa lang ka pipeline/correction operation matag time.
+pipelineWork() - run record, extraction, staging, rule evaluation,
+warehouse load, counts, lineage ug audit sulod sa transaction.
+runPipeline() - authorized outer operation; records failures properly.
+
+Sa pipeline.repository.ts:
+load() - upsert sa valid canonical entities ug calculate derived data.
+Upsert = insert kung wala pa; update kung naa na ang same identity.
+addLineage() - mag-andam sa per-field source history sa run.
+Tenant/unit caches mopugong sa repeated work sulod sa usa ka run.
+
+Idempotent = balik-balik nga run sa parehas nga source dili magdoble
+sa canonical records. Adunay bag-ong run/history, pero stable ang IDs.
+
+Quarantine = adunay row ug reason; dili silently mawala ang bad input.
+Kon adunay earlier accepted warehouse value ug ang sunod nga input
+ma-invalid o mawala, preserved ang earlier value. Tan-awa ang dates.
+
+Row reconciliation:
+extracted = loaded + quarantined + deduplicated.
+Ang loaded count source rows, dili count sa distinct tenants.
+237 source rows ang untouched demo, dili 237 ka residents.
+
+9. DATA QUALITY FUNCTIONS UG SCORE
+
+Sa quality/engine.ts, evaluate():
+basahon ang enabled rule definitions -> check applicable source rows
+-> count passed ug failed -> return failure observations.
+
+Ang five dimensions:
+Completeness: naa ba ang required contact/start date?
+Validity: valid ba ang date, email, unit ug financial amount?
+Uniqueness: duplicate tenant o conflicting active lease ba?
+Consistency: sakto ba ang referenced unit ug compatible ang names?
+Timeliness: overdue na ba ang unpaid dues o open maintenance request?
+
+13 rules ang seed. Ang checked count mahimong lahi kada rule kay
+ang billing check dili applicable sa tanang visitor records.
+
+qualityScore() = (checked - failed) / checked x 100, rounded to 2 decimals.
+Kung walay applicable observations, null/not measured ang score.
+qualityHistory() nagbasa sa latest 12 completed/partial runs.
+Overall score gikan sa total observations, dili simple average sa
+rounded rule percentages. Parehas nga row mahimong ma-check sa daghang
+rules. Ang comparison percentage points, dili percent growth.
+
+Ang correction ma-verify sa bag-ong run. Ang old score preserved.
+Ang acceptance test ni-improve gikan 92.18% ngadto sa 94.84% sa iyang
+fresh fixtures. Dili kini hardcoded score sa live dashboard.
+
+10. ISSUE QUEUE FUNCTIONS
+
+sourceRow() - basahon ang current source record.
+correctSource() - update sa allowed source table/fields.
+issueActionSchema ug correctionSchemas - allowed action ug fields.
+issueDetail() - protected issue inspection; confidential values filtered.
+actOnIssue() - actual decision workflow.
+
+actOnIssue() mo-check sa role, latest run, expected update timestamp
+ug source fingerprint sa dili pa mo-save.
+Kung nausab na ang source, dili niya hilom nga i-overwrite.
+
+FIX: correct source -> pipeline verification -> selected rule must pass
+-> mark old issue RESOLVED -> source/issue audit records.
+Kung wala masulbad ang selected rule, transaction rollback: walay
+partial correction nga ma-save.
+ACCEPT: record reason/status; dili change source o historical score.
+QUARANTINE: prevent future loads from that source row; preserve older
+accepted warehouse values ug record the decision.
+
+Financial amount corrections require finance permission.
+Visitor issues require visitor permission.
+Ang usa ka role nga maka-edit ug contact dili automatic maka-edit
+sa payments o makakita sa visitors.
+
+11. WAREHOUSE UG FIELD-LEVEL ACCESS
+
+tenantList() - search/paginated tenant records ug permitted fields.
+unitList() - searchable units.
+tenantDetail() - accepted leases, permitted dues/visitors, maintenance
+ug field lineage sa selected tenant.
+
+Sa warehouse/access.ts:
+fieldVisible() - class/permission rule.
+protectRecord() - allow catalogued permitted fields; mask Viewer contact.
+recordRead() - classified-read audit before sending the response.
+
+Public/internal metadata dili pareho sa confidential financial amount.
+Restricted visitor values adunay laing permission.
+Unknown uncatalogued fields dili basta iapil sa response.
+Sensitive values dili kay gitago ra pinaagi sa CSS.
+
+12. FIVE ROLES UG ILANG LIMITS
+
+PROPERTY MANAGER / ADMIN
+All implemented screens; run pipeline; review/fix/accept/quarantine
+eligible issues; financial amounts ug visitors; policies, account-role
+changes ug audit. Dili maka-change sa iyang own role pinaagi sa UI.
+Protected ang last active admin. Dili niya ma-edit/delete audit rows
+pinaagi sa implemented application API.
+
+DATA STEWARD
+Tenant/unit views, pipeline, quality ug eligible issue actions;
+catalog/policy/role read. Walay dues amounts, financial amount edits,
+financial quarantine, visitor records o admin audit/account controls.
+Mahimong mo-correct ug permitted nonfinancial billing fields.
+
+FINANCE
+Tenant/unit views, dues amounts, quality results ug catalog.
+Maka-view sa Pipeline history/stages pero dili maka-trigger ug run.
+Walay visitor records, pipeline trigger, issue mutation, policy editing,
+account-role administration o audit access.
+
+FRONT DESK / SECURITY
+Tenant/unit views, visitor entries ug catalog.
+Walay financial amounts, pipeline, quality/issue administration,
+policy/role administration o audit. Tenant workspace ang fallback.
+
+VIEWER
+Tenant/unit views, quality results ug catalog.
+Maka-view sa Pipeline history/stages pero dili maka-trigger ug run.
+Masked ang tenant email/phone. Walay financial amounts o visitors;
+walay pipeline trigger, issue mutation o governance administration.
+
+Ang permissions naa sa seeded database role records.
+Changing assigned role revokes that user's sessions; login again.
+Editing policy text dili mo-grant ug new API permission.
+
+13. GOVERNANCE SERVICE FUNCTIONS
+
+governanceService() groups catalog, roles, policies, users ug audit.
+catalog() - owner, classification, source ug policy per field.
+roles()/policies() - current definitions/text for permitted users.
+users() - administrator role list; walay password hashes sa response.
+updatePolicy() - authorized edit, expected old text, reason ug audit.
+updateRole() - authorized assignment, freshness/last-admin/self guards,
+session revocation ug audit, in one transaction.
+audit() - filter/paginate events; audit-reading action recorded usab.
+
+Audit entries adunay actor ID, action, entity, time ug before/after
+kung applicable. Ang DB trigger mo-reject sa UPDATE/DELETE/TRUNCATE.
+Ang database owner mahimong maka-disable sa trigger, busa dili ni
+tamper-proof batok sa database superuser.
+
+14. FRONTEND FUNCTIONS
+
+Workspace() - load session, render permitted navigation ug current screen.
+Login() - collect assigned email/password, busy/error feedback.
+PipelineScreen() - run/list/inspect pipeline history ug stage counts.
+QualityScreen() - actual per-rule scores ug saved run comparison.
+IssuesScreen() - filters, protected detail, correction field/value/reason.
+TenantsScreen() - search, units, allowed details ug lineage.
+GovernanceScreen() - permitted catalog/policy/account/audit tabs.
+CatalogScreen(), PoliciesScreen(), UsersScreen(), AuditScreen()
+mao ang specific tab contents. readable() formats audit values as text.
+
+api<T>() - common browser fetch, response envelope ug typed result.
+send() - mutation helper for POST/PATCH requests.
+ApiError - readable failed-request information.
+useResource<T>() - loading/data/error state ug explicit reload().
+Walay scheduled polling, focus refresh o automatic retry loop.
+Ang Retry/Refresh button user-triggered.
+
+DataState() - loading skeleton or error with Retry, otherwise content.
+Empty() - klarong message kung walay matching records.
+Status() - readable status text/badge.
+Pagination() - previous/next according sa total ug current page.
+RecordTable() - permitted record values; walay raw JSON editor.
+label() - human-readable field name.
+cn() - combines CSS class names.
+date()/number() - display formatting.
+Button/Input/Table - shared UI; keyboard-focusable scroll regions sa tables.
+
+15. TESTING UG UNSAY NAPAMATUD-AN
+
+npm test = 32 unit tests: transform/rule/safety ug environment selection.
+test:integration = 41 reported local DB/API tests, apil parent groups.
+test:browser = main flows, role changes, responsive/a11y ug recovery states.
+test:security = focused access/account API checks ug end-to-end browser
+password change, admin-issued recovery code ug security-question reset.
+Ayaw i-parallel ang suites kay shared sila ug isolated local ports.
+test:acceptance = access-only provisioning checks; 9 demo scenarios plus parent,
+dayon 2 browser flows for roles/lineage ug policies/audit details.
+
+Fresh acceptance: four sources -> one Maria; six different corrections;
+real score improvement; stable IDs/counts on repeat; protected roles;
+eight start/finish pipeline audits ug six source/decision audits.
+Ang tests loopback-only ug separate sa regular demonstration database.
+Chromium ang automated browser. Dili pa full cross-browser o screen
+reader certification ang automated accessibility checks.
+
+16. MGA PANGUTANA NGA POSIBLENG IPANGUTANA
+
+"Ngano dili na lang Excel?"
+EDM demo ni sa reconciliation, automated rules, permissions, lineage ug
+audit across sources. Dili lang usa ka manually maintained spreadsheet.
+
+"Unsa ang difference sa authentication ug authorization?"
+Authentication: kinsa ka? Authorization: unsa imong allowed buhaton?
+
+"Unsay difference sa source ug warehouse?"
+Source ang original simulated input; warehouse ang accepted unified data.
+Preserved ang staging snapshot alang sa pag-inspect sa matag run.
+
+"Mo-100% ba kung i-accept tanan issues?"
+Dili. Accepting records a decision; dili niya usbon ang actual checks
+o historical score. Verified correction maoy mahimong improve new runs.
+
+"Kung balik-balikon ang Run pipeline, madoble ang tenants?"
+Idempotent ang accepted canonical upserts. Bag-ong run/history ang
+madugang, dili duplicate canonical tenant tungod lang sa repeat.
+
+"Maka-bypass ba kung direct API ang tawagon?"
+Ang implemented backend nag-check sa session ug permission. Tested ang
+selected denial cases. Dili nato i-claim nga imposible ang tanang bugs.
+
+"Naa na sa Neon?"
+Adunay Bern-owned Neon runtime, dedicated bern_hub schema ug five
+accounts/catalog metadata. Naa na ang one-time authorized fictional
+source import ug initialization run. Local gihapon ang automated tests;
+dili i-repeat ang remote provisioning o demo import.
+
+"Bcrypt ba? Naa bay OTP/security question/forgot password?"
+Scrypt ang Bern password ug normalized security-answer hashes.
+Naa nay Account security para sa own question ug password change,
+Forgot password ug admin-assisted recovery sa Account roles.
+Walay automatic email/SMS OTP. Cryptographic random code ang admin
+mo-share privately human verification; hashed, 15-minute expiry ug
+single-use. Knowledge check ang question, dili independent MFA.
+
+"Complete condo management app ba?"
+Mini EDM platform ni. Simulated sources, up to 500 rows per synchronous
+run, walay actual payment processing, SSO o real external adapters.
+Ang Philippine privacy-law reference sa policy dili compliance certificate.
+
+17. LAST NGA TIP SA PRESENTATION
+
+Una ipakita ang problem, dayon ang one-tenant result, quality issue,
+verified correction, role difference ug audit evidence.
+Mas sayon sabton kung sundon ang usa ka example kaysa basahon tanan
+files sa screen. Gamita ang file map kung pangutan-on asa ang code.
+Private credentials naa lang sa ignored .local/development-access.txt.
+
+18. BAG-ONG ACCOUNT SECURITY CODE WALKTHROUGH
+
+frontend/src/features/account/account.screen.tsx:
+AccountScreen() mo-load sa own question/configured flag. submit()
+mo-check sa password confirmation ug mo-send sa protected API.
+Human successful change, ibalik sa sign-in kay revoked tanan sessions.
+
+recovery-form.tsx: RecoveryForm() duha ka step. Una email/code, dayon
+question kung configured ug new password. Temporary component state
+ra ang code; wala sa URL o localStorage. Dili automatic login human reset.
+
+admin-recovery.tsx: AdminRecovery() para sa laing active account.
+Own admin password/answer ug verification note ang proof. Code makita
+kausa ug masked una; i-close ang panel aron mawala sa displayed state.
+Reset security question mo-clear ra; dili siya mo-display o mo-pili
+sa replacement answer. Ang user maoy mopili sa iyang own answer.
+
+backend/src/modules/auth/account-security.schemas.ts:
+Strict validation sa allowed fields ug lengths; normalizeAnswer()
+mo-normalize Unicode, spaces ug casing aron consistent ang comparison.
+
+account-security.service.ts:
+securityProfile() = own question/configured status, walay hashes.
+checkCurrent() = fresh password/answer proof; persistent failed-attempt
+counter ug 15-minute lock after five failures.
+setSecurityQuestion() = first enrollment or verified replacement;
+hash answer, increment credentialVersion, revoke sessions/codes, audit.
+changePassword() = require question/current proof, reject same password,
+hash new password, increment version, revoke access ug audit.
+assistRecovery() = fresh admin permission/proof; no self recovery;
+issue hashed random code or clear question after offline verification.
+recoveryDetails() = valid code/email ra makakuha sa question.
+resetPassword() = recheck expiry/version/attempts, verify answer,
+consume code atomically, save new hash, revoke sessions/codes ug audit.
+invalidateAccess() = common session deletion/code revocation.
+
+shared/account-lock.ts: lockAccounts() locks sorted user rows aron
+serialized ang login, role/password changes ug code redemption.
+authentication.ts compares session credentialVersion sa current user.
+Dili mahimong gamiton ang old session human credential change.
+
+account-security.routes.ts separates public recovery from protected
+account routes. Admin handlers naa usab governance:manage middleware.
+Five wrong answers invalidate a recovery code. Public recovery has
+eight requests/15 minutes per IP; protected security writes ten.
+In-memory per API process ang IP limiter; dili multi-server shared store.
+
+Migration: 20261028161557_account_security. Additive ang fields/table;
+wala gi-reset ang existing account passwords. Ang initial private
+account note mahimong outdated human mag-change password ang user.
+Kung pareho nga shared role account, tanan classmates affected sa change.
+Walay answer/password/recovery code sa application audit payloads.
