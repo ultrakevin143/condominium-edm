@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { ApiError } from "../../shared/errors.js";
 import { lockAccounts } from "../../shared/account-lock.js";
+import { effectivePermissions } from "../../shared/role-access.js";
 import {
   hashPassword,
   newToken,
@@ -65,7 +66,10 @@ export async function login(db: PrismaClient, input: unknown, ip?: string) {
           id: user.id,
           name: user.name,
           role: user.role.code,
-          permissions: user.role.permissions,
+          permissions: effectivePermissions(
+            user.role.code,
+            user.role.permissions,
+          ),
         },
       };
     },

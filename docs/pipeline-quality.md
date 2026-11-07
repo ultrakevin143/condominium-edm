@@ -1,5 +1,7 @@
 # Phases 2 and 3: pipeline and quality
 
+Access to Pipeline, Data Quality, Issues and Governance is limited to the property manager and data steward. Finance, Front Desk and Viewer use Tenants and Account Security; Finance can see permitted dues, Front Desk can see permitted visitor records, and Viewer receives masked contact details. Account and policy administration and audit history remain property-manager functions. The server applies these limits even to existing accounts with older, broader grants; fewer database grants remain in force.
+
 The four adapters read the separate simulated tenancy, billing, maintenance and visitor tables. Every extracted row is saved with its source and run. Format normalization supports explicit ISO dates and day/month/year slash dates, unit spelling variations, whitespace and case changes. Tenant IDs take precedence. Fallback matching needs an unambiguous compatible name in the same unit; conflicting initials or tenant/unit associations are rejected.
 
 The run automatically evaluates enabled database rule definitions through a shared engine. Rule parameters carry the day thresholds; saved results retain the definition that was used. All 13 rules have clean/defect unit coverage. Scores use observed checks rather than averaging percentages. Zero observations is unavailable, and no history is fabricated.

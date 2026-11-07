@@ -28,13 +28,13 @@ export const roleDefinitions = {
   },
   finance: {
     name: "Finance",
-    permissions: ["quality:read", "finance:read", "tenants:read"],
+    permissions: ["finance:read", "tenants:read"],
   },
   frontdesk: {
     name: "Front desk / Security",
     permissions: ["visitors:read", "tenants:read"],
   },
-  viewer: { name: "Viewer", permissions: ["quality:read", "tenants:read"] },
+  viewer: { name: "Viewer", permissions: ["tenants:read"] },
 } as const;
 
 export const tenantNames = [

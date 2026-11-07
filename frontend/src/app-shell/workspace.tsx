@@ -98,7 +98,7 @@ export function Workspace({ section }: { section: string }) {
       key: "governance",
       label: "Governance",
       icon: ShieldCheck,
-      permission: "tenants:read",
+      permission: "governance:read",
     },
     {
       key: "account",
@@ -107,11 +107,12 @@ export function Workspace({ section }: { section: string }) {
       permission: "tenants:read",
     },
   ].filter((t) => profile.permissions.includes(t.permission));
-  const current = tabs.some((t) => t.key === section) ? section : "tenants";
+  const current = section === "home" ? tabs[0]?.key : section;
+  const allowed = tabs.some((t) => t.key === current);
   return (
     <div className="workspace">
       <header className="app-header">
-        <a href="/pipeline" className="brand">
+        <a href="/" className="brand">
           <Building2 size={22} />
           <span>
             Condo desk<small>Fictional property · EDM demonstration</small>
@@ -146,16 +147,23 @@ export function Workspace({ section }: { section: string }) {
             {error}
           </p>
         )}
-        {current === "pipeline" && (
+        {!allowed && (
+          <p role="alert" className="notice">
+            Your role cannot open this page. Choose a page from the navigation.
+          </p>
+        )}
+        {allowed && current === "pipeline" && (
           <PipelineScreen
             canRun={profile.permissions.includes("pipeline:run")}
           />
         )}{" "}
-        {current === "tenants" && <TenantsScreen />}
-        {current === "quality" && <QualityScreen />}
-        {current === "issues" && <IssuesScreen />}
-        {current === "governance" && <GovernanceScreen profile={profile} />}
-        {current === "account" && (
+        {allowed && current === "tenants" && <TenantsScreen />}
+        {allowed && current === "quality" && <QualityScreen />}
+        {allowed && current === "issues" && <IssuesScreen />}
+        {allowed && current === "governance" && (
+          <GovernanceScreen profile={profile} />
+        )}
+        {allowed && current === "account" && (
           <AccountScreen
             onSignedOut={(message) => {
               setNotice(message);

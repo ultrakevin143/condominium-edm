@@ -45,9 +45,9 @@ test("classified warehouse reads and governance controls", async (t) => {
         ] of [
           ["admin", admin, true, true, true, true],
           ["steward", steward, true, true, false, false],
-          ["finance", finance, true, false, true, false],
+          ["finance", finance, false, false, true, false],
           ["frontdesk", front, false, false, false, true],
-          ["viewer", viewer, true, false, false, false],
+          ["viewer", viewer, false, false, false, false],
         ] as const) {
           const profile = (await agent.get("/auth/me").expect(200)).body.data;
           assert.equal(profile.role, role);
@@ -63,7 +63,9 @@ test("classified warehouse reads and governance controls", async (t) => {
             `${role} visitors`,
           );
           await agent.get("/account/security").expect(200);
-          await agent.get("/governance/catalog").expect(200);
+          await agent
+            .get("/governance/catalog")
+            .expect(["admin", "steward"].includes(role) ? 200 : 403);
           await agent.get("/quality/history").expect(quality ? 200 : 403);
           await agent.get("/pipeline/runs").expect(quality ? 200 : 403);
           await agent.get("/issues").expect(issues ? 200 : 403);
@@ -142,7 +144,7 @@ test("classified warehouse reads and governance controls", async (t) => {
         );
         await viewer.get("/governance/audit").expect(403);
         await finance.get("/governance/users").expect(403);
-        await viewer.get("/governance/catalog").expect(200);
+        await viewer.get("/governance/catalog").expect(403);
         const history = (
           await admin
             .get("/governance/audit?action=CLASSIFIED_READ")

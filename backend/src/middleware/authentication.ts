@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import { ApiError } from "../shared/errors.js";
 import { tokenHash } from "../shared/security.js";
 import type { Actor } from "../shared/context.js";
+import { effectivePermissions } from "../shared/role-access.js";
 declare global {
   // Express extends response locals through its declaration namespace.
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -40,7 +41,7 @@ export function authentication(db: PrismaClient): RequestHandler {
       id: user.id,
       name: user.name,
       role: user.role.code,
-      permissions: user.role.permissions,
+      permissions: effectivePermissions(user.role.code, user.role.permissions),
     };
     next();
   };

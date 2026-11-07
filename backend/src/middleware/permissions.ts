@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { ApiError } from "../shared/errors.js";
 import type { Actor } from "../shared/context.js";
+import { effectivePermissions } from "../shared/role-access.js";
 
 export async function authorize(
   tx: Prisma.TransactionClient,
@@ -17,11 +18,15 @@ export async function authorize(
       "UNAUTHENTICATED",
       "Sign in with an active account.",
     );
-  if (!user.role.permissions.includes(permission))
+  const permissions = effectivePermissions(
+    user.role.code,
+    user.role.permissions,
+  );
+  if (!permissions.includes(permission))
     throw new ApiError(
       403,
       "FORBIDDEN",
       "Your role does not permit this action.",
     );
-  return user;
+  return { ...user, role: { ...user.role, permissions } };
 }

@@ -420,7 +420,7 @@ test("ETL, real quality snapshots and steward workflow", async (t) => {
           .send({})
           .expect(403);
         await viewer.get("/issues").expect(403);
-        await viewer.get("/quality/history").expect(200);
+        await viewer.get("/quality/history").expect(403);
         await admin.get("/pipeline/runs?page=0").expect(422);
         await admin.get("/pipeline/runs/not-a-uuid").expect(422);
         await admin

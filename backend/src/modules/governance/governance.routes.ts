@@ -12,7 +12,7 @@ export function governanceRoutes(db: PrismaClient) {
     service = governanceService(db);
   router.get(
     "/catalog",
-    requirePermission("tenants:read"),
+    requirePermission("governance:read"),
     async (req, res) => {
       empty.parse(req.query);
       res.json({ data: await service.catalog() });

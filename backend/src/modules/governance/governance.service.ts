@@ -3,6 +3,7 @@ import { authorize } from "../../middleware/permissions.js";
 import { ApiError } from "../../shared/errors.js";
 import type { Actor } from "../../shared/context.js";
 import { lockAccounts } from "../../shared/account-lock.js";
+import { effectivePermissions } from "../../shared/role-access.js";
 export function governanceService(db: PrismaClient) {
   return {
     catalog: () =>
@@ -10,7 +11,11 @@ export function governanceService(db: PrismaClient) {
         include: { owner: true, policy: true },
         orderBy: [{ entity: "asc" }, { field: "asc" }],
       }),
-    roles: () => db.role.findMany({ orderBy: { code: "asc" } }),
+    roles: async () =>
+      (await db.role.findMany({ orderBy: { code: "asc" } })).map((role) => ({
+        ...role,
+        permissions: effectivePermissions(role.code, role.permissions),
+      })),
     policies: () => db.policy.findMany({ orderBy: { name: "asc" } }),
     users: () =>
       db.user.findMany({

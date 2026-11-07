@@ -1,5 +1,33 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { effectivePermissions } from "../src/shared/role-access.js";
+
+test("effective permissions limit roles even when database grants are too broad", () => {
+  const all = [
+    "tenants:read",
+    "quality:read",
+    "quality:manage",
+    "pipeline:run",
+    "governance:read",
+    "finance:read",
+    "visitors:read",
+  ];
+  assert.deepEqual(effectivePermissions("viewer", all), ["tenants:read"]);
+  assert.deepEqual(effectivePermissions("finance", all), [
+    "tenants:read",
+    "finance:read",
+  ]);
+  assert.deepEqual(effectivePermissions("frontdesk", all), [
+    "tenants:read",
+    "visitors:read",
+  ]);
+  assert.equal(
+    effectivePermissions("steward", all).includes("quality:manage"),
+    true,
+  );
+  assert.deepEqual(effectivePermissions("unknown", all), []);
+  assert.deepEqual(effectivePermissions("admin", []), []);
+});
 import {
   assertLocalDatabase,
   assertRuntimeDatabase,

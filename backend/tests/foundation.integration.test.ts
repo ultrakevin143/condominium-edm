@@ -32,7 +32,7 @@ test("fresh local migration and fictional seed foundation", async (t) => {
           assert.ok(!user.role.permissions.includes("governance:manage"));
         assert.deepEqual(
           users.find((u) => u.role.code === "viewer")!.role.permissions.sort(),
-          ["quality:read", "tenants:read"],
+          ["tenants:read"],
         );
         assert.ok(
           !users
