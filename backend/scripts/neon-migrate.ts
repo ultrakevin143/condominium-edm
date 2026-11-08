@@ -2,12 +2,16 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { PrismaClient } from "@prisma/client";
-import { loadEnvironment } from "../src/config/environment.js";
+import {
+  loadEnvironment,
+  loadMigrationEnvironment,
+} from "../src/config/environment.js";
 import { assertNeonConfiguration } from "../src/config/database-safety.js";
 
 // Deliberate maintenance only: review and verify pending migrations locally first.
 // This command does not provision accounts, seed records or run a pipeline.
 loadEnvironment();
+loadMigrationEnvironment();
 assertNeonConfiguration();
 const db = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
 const require = createRequire(import.meta.url);

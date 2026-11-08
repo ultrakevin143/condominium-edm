@@ -17,6 +17,7 @@ const clean: Extracted[] = [
       status: "active",
       email: "maria@example.test",
       phone: "fictional",
+      sourceUpdatedAt: "2026-10-27T10:00:00.000Z",
     },
   },
   {
@@ -46,6 +47,9 @@ const clean: Extracted[] = [
   },
 ];
 const defects: Record<string, (rows: Extracted[]) => void> = {
+  source_freshness: (r) => {
+    r[0]!.payload.sourceUpdatedAt = "2026-01-01T00:00:00.000Z";
+  },
   tenant_contact: (r) => {
     r[0]!.payload.phone = null;
   },
@@ -111,4 +115,16 @@ for (const definition of ruleDefinitions)
 test("score uses observation counts and no observations is unavailable", () => {
   assert.equal(qualityScore(0, 0), null);
   assert.equal(qualityScore(4, 1), 75);
+});
+test("missing provider timestamps are not counted as fresh", () => {
+  const rule = {
+    ...ruleDefinitions.find((r) => r.code === "source_freshness")!,
+    id: "freshness",
+    enabled: true,
+  } as QualityRule;
+  const rows = structuredClone(clean);
+  delete rows[0]!.payload.sourceUpdatedAt;
+  const result = evaluate([rule], prepare(rows), now)[0]!;
+  assert.equal(result.checked, 0);
+  assert.equal(qualityScore(result.checked, result.failed), null);
 });

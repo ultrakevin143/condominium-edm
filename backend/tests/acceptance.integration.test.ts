@@ -116,7 +116,7 @@ test("instructor acceptance on a fresh fictional database", async (t) => {
         );
         const snapshot = (await admin.get("/quality/history").expect(200)).body
           .data[0];
-        assert.equal(snapshot.rules.length, 13);
+        assert.equal(snapshot.rules.length, 14);
         assert.ok(
           snapshot.rules.filter((rule: { failed: number }) => rule.failed > 0)
             .length >= 6,

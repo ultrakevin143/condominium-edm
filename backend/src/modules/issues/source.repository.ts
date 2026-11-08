@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import type { Payload, Source } from "../pipeline/transform.js";
+import { sourcePayload } from "../pipeline/adapters.js";
 
 export async function sourceRow(
   tx: Prisma.TransactionClient,
@@ -15,11 +16,7 @@ export async function sourceRow(
           ? await tx.sourceMaintenance.findUnique({ where: { externalId } })
           : await tx.sourceVisitorLog.findUnique({ where: { externalId } });
   if (!row) return null;
-  return Object.fromEntries(
-    Object.entries(row)
-      .filter(([k]) => k !== "id")
-      .map(([k, v]) => [k, v === null ? null : String(v)]),
-  );
+  return sourcePayload(row);
 }
 export async function correctSource(
   tx: Prisma.TransactionClient,

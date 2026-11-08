@@ -1,10 +1,20 @@
 import type { Prisma } from "@prisma/client";
 import type { Extracted, Payload, Source } from "./transform.js";
+export function sourcePayload(row: object): Payload {
+  const payload: Payload = {};
+  for (const [key, value] of Object.entries(row))
+    if (key !== "id" && !(key === "sourceUpdatedAt" && value === null))
+      payload[key] =
+        value === null
+          ? null
+          : value instanceof Date
+            ? value.toISOString()
+            : String(value);
+  return payload;
+}
 function pack(source: Source, rows: object[]): Extracted[] {
   return rows.map((row) => {
-    const payload: Payload = {};
-    for (const [key, value] of Object.entries(row))
-      if (key !== "id") payload[key] = value === null ? null : String(value);
+    const payload = sourcePayload(row);
     return { source, sourceId: payload.externalId!, payload };
   });
 }

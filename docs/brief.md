@@ -28,9 +28,11 @@ uploads, payments processing, ML. Do not refactor or restyle unrelated files.
 - Frontend: Next.js (App Router, TypeScript)
 - Backend: Express (TypeScript), separate API service
 - Database: PostgreSQL on Neon, accessed only through Prisma
-- Neon: use the pooled connection string (DATABASE_URL) at runtime and the direct
-  connection string (DIRECT_URL, via `directUrl` in schema.prisma) for migrations.
-  Secrets live in .env; commit a .env.example with no real values.
+- Neon: use the pooled runtime connection (DATABASE_URL) for the API. Keep the
+  direct migration credential in ignored `.local/neon-migration.env`; the explicit
+  Neon maintenance commands load it only when requested. Credentials may differ,
+  but both endpoints must target Bern's pinned database and `bern_hub` schema.
+  Secrets stay private; commit only an example with empty values.
 
 ## Before you write code
 

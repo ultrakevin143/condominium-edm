@@ -25,7 +25,7 @@ test("access-only provisioning is isolated from operational demo seeding", async
               verifyPassword(password, user.passwordHash),
           ),
         );
-        assert.equal(await db.qualityRule.count(), 13);
+        assert.equal(await db.qualityRule.count(), 14);
         assert.ok((await db.fieldClassification.count()) > 0);
         for (const count of await Promise.all([
           db.sourceTenancy.count(),

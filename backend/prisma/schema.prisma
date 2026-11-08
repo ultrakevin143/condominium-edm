@@ -46,6 +46,7 @@ model SourceTenancy {
   leaseStart String?
   leaseEnd   String?
   status     String?
+  sourceUpdatedAt DateTime?
 
   @@map("bern_src_tenancy")
 }
@@ -60,6 +61,7 @@ model SourceBilling {
   dueDate    String?
   amountDue  Decimal? @db.Decimal(12, 2)
   amountPaid Decimal? @db.Decimal(12, 2)
+  sourceUpdatedAt DateTime?
 
   @@map("bern_src_billing")
 }
@@ -73,6 +75,7 @@ model SourceMaintenance {
   description String?
   openedAt    String?
   status      String?
+  sourceUpdatedAt DateTime?
 
   @@map("bern_src_maintenance")
 }
@@ -85,6 +88,7 @@ model SourceVisitorLog {
   unitCode    String?
   visitorName String?
   enteredAt   String?
+  sourceUpdatedAt DateTime?
 
   @@map("bern_src_visitor_log")
 }

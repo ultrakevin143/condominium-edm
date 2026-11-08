@@ -13,6 +13,9 @@ import {
   issueDetail,
 } from "../src/modules/issues/issues.service.js";
 import { qualityHistory } from "../src/modules/quality/quality.service.js";
+import { adapters } from "../src/modules/pipeline/adapters.js";
+import { prepare } from "../src/modules/pipeline/transform.js";
+import { evaluate } from "../src/modules/quality/engine.js";
 import { createApp } from "../src/app.js";
 import type { Actor } from "../src/shared/context.js";
 import { ApiError } from "../src/shared/errors.js";
@@ -46,6 +49,32 @@ test("ETL, real quality snapshots and steward workflow", async (t) => {
       ip: "127.0.0.1",
     });
     const app = createApp(db, origin);
+    await t.test(
+      "source freshness preserves provider timestamps through extraction",
+      async () => {
+        const updated = new Date("2026-10-27T10:00:00Z");
+        await db.sourceTenancy.update({
+          where: { externalId: "tenancy-1" },
+          data: { sourceUpdatedAt: updated },
+        });
+        try {
+          const rows = await db.$transaction((tx) => adapters.tenancy(tx));
+          const source = rows.find((row) => row.sourceId === "tenancy-1")!;
+          assert.equal(source.payload.sourceUpdatedAt, updated.toISOString());
+          const rule = await db.qualityRule.findUniqueOrThrow({
+            where: { code: "source_freshness" },
+          });
+          const result = evaluate([rule], prepare(rows), now)[0]!;
+          assert.equal(result.checked, 1);
+          assert.equal(result.failed, 0);
+        } finally {
+          await db.sourceTenancy.update({
+            where: { externalId: "tenancy-1" },
+            data: { sourceUpdatedAt: null },
+          });
+        }
+      },
+    );
     let firstRunId = "";
     let previousCounts: Record<string, number> = {};
     async function counts() {
@@ -159,7 +188,7 @@ test("ETL, real quality snapshots and steward workflow", async (t) => {
         const results = await db.qualityResult.findMany({
           where: { runId: run.id },
         });
-        assert.equal(results.length, 13);
+        assert.equal(results.length, 14);
         assert.ok(results.filter((r) => r.failed > 0).length >= 6);
         const history = await qualityHistory(db);
         assert.ok(history[0]!.score !== null);

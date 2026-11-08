@@ -66,6 +66,10 @@ test("runtime accepts explicit matching Neon endpoints but defaults to local", (
   assert.throws(() =>
     assertRuntimeDatabase({ ...neon, BERN_DATABASE_TARGET: undefined }),
   );
+  assert.equal(
+    assertRuntimeDatabase({ ...neon, DIRECT_URL: undefined }).hostname,
+    "ep-fixture-one-pooler.us-east-2.aws.neon.tech",
+  );
 });
 
 test("Neon runtime rejects wrong targets, missing TLS/schema and oversized pools", () => {
@@ -73,10 +77,6 @@ test("Neon runtime rejects wrong targets, missing TLS/schema and oversized pools
     { ...neon, BERN_NEON_HOST: "ep-other.us-east-2.aws.neon.tech" },
     { ...neon, DIRECT_URL: neon.DATABASE_URL },
     { ...neon, DIRECT_URL: neon.DIRECT_URL.replace("neondb?", "different?") },
-    {
-      ...neon,
-      DIRECT_URL: neon.DIRECT_URL.replace("not-a-real-secret", "different"),
-    },
     {
       ...neon,
       DATABASE_URL: neon.DATABASE_URL.replace(
@@ -100,6 +100,17 @@ test("Neon runtime rejects wrong targets, missing TLS/schema and oversized pools
     },
   ])
     assert.throws(() => assertNeonConfiguration(env));
+});
+
+test("migration endpoint accepts a distinct database credential", () => {
+  const direct = neon.DIRECT_URL.replace(
+    "fixture:not-a-real-secret",
+    "migration:another-fixture-secret",
+  );
+  assert.equal(
+    assertNeonConfiguration({ ...neon, DIRECT_URL: direct }).direct.username,
+    "migration",
+  );
 });
 
 test("test contexts cannot opt into Neon and require local URLs on both connections", () => {

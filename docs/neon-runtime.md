@@ -4,7 +4,9 @@ Bern uses its explicitly configured Neon database for ordinary application traff
 
 ## Private configuration
 
-Keep `.env` at the project root, beside `frontend/` and `backend/`. Its private values include `DATABASE_URL` (pooled), `DIRECT_URL` (direct), `BERN_DATABASE_TARGET=neon`, and `BERN_NEON_HOST` (the direct endpoint hostname). Both URLs must use the same database/credentials, TLS and `schema=bern_hub`. The configured runtime connection limit is two; direct provisioning uses one connection. `.env.example` contains names and empty values only.
+Keep the API runtime settings in `.env` at the project root, beside `frontend/` and `backend/`. Set `DATABASE_URL` to the pooled endpoint using a restricted application database role, plus `BERN_DATABASE_TARGET=neon` and `BERN_NEON_HOST` (the direct endpoint hostname). For Prisma schema tooling, `DIRECT_URL` in this file may duplicate that same restricted runtime URL. The API validates only `DATABASE_URL`, then removes `DIRECT_URL` from its process environment before creating PrismaClient.
+
+Keep the direct migration credential in the ignored `.local/neon-migration.env` file as `DIRECT_URL=...`. Only the explicit `db:neon:provision` and `db:neon:migrate` commands load it. The pooled and direct URLs must target the same pinned database and `bern_hub` schema, use TLS, and may use different database roles. Use a small connection limit (the runtime pool is two; maintenance should use one). Create the restricted runtime role and grant only the application's required access in Neon; this repository validates endpoint separation but cannot prove or create those provider-side grants automatically. `.env.example` contains setting names and empty values only.
 
 The separate schema keeps Bern tables and its `_prisma_migrations` history away from other projects. Table names still use the existing `bern_` prefix. Schema selection comes from the private URLs, so local tests can exercise the same schema without a remote connection.
 
@@ -44,4 +46,4 @@ Remote work is limited to authorized provisioning, the single shared import/init
 
 For a classmate's laptop, share configuration and assigned account details privately. They install dependencies with `npm ci`, generate Prisma with `npm run db:generate`, place the private `.env` at the project root and run `npm run dev`. They do not need a local PostgreSQL server merely to use the Neon runtime, and they must not run provisioning again.
 
-The supplied database owner connection is for this educational setup. Application roles govern API access; possession of database-owner credentials also permits direct database operations. A deployed production service needs a separate restricted runtime identity and server-hosted secrets. No Git publication or deployment is part of this setup.
+Application roles govern API access, while database roles govern direct SQL access. Never use an owner credential as the runtime `DATABASE_URL`; configure a restricted role in Neon and keep the owner/direct credential only in `.local/neon-migration.env` for deliberate maintenance. A deployed service also needs server-hosted secrets. No Git publication or deployment is part of this setup.

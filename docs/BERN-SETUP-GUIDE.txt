@@ -66,9 +66,16 @@ Ang setup:local maghimo sa ignored .env kung wala pa kini.
 Kung naa nay .env, dili niya ilisan.
 
 Ang ordinary npm run dev / npm start mogamit sa root runtime .env.
-Neon mode kinahanglan pooled/direct URLs, TLS, schema=bern_hub,
-BERN_DATABASE_TARGET=neon ug BERN_NEON_HOST nga direct endpoint pin.
-Private ang actual values. Ayaw gamita ang John/Jomari URLs.
+Ibutang ang restricted pooled URL sa DATABASE_URL, BERN_DATABASE_TARGET=neon,
+ug BERN_NEON_HOST nga direct endpoint pin. TLS ug schema=bern_hub ang kinahanglan.
+Kung nanginahanglan ang Prisma tooling og DIRECT_URL, kopyaha ang parehas nga
+restricted runtime URL didto. Ayaw ibutang didto ang database-owner credential.
+
+Ang direct migration credential ibutang lang sa ignored
+.local\neon-migration.env isip DIRECT_URL=. Ang db:neon:provision ug
+db:neon:migrate ra ang mobasa niini. Ang duha ka URL kinahanglan pareho og
+database/schema ug TLS, apan lahi ang role credentials. Private ang values.
+Ayaw gamita ang John/Jomari URLs.
 Preserved ang local configuration sa .local\local.env.
 
 5. ASA ANG LOGIN ACCOUNTS?

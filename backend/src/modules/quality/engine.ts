@@ -13,6 +13,16 @@ type Check = (
   now: Date,
 ) => boolean | null;
 const checks: Record<string, Check> = {
+  source_freshness: (r, _, days, now) => {
+    const value = r.payload.sourceUpdatedAt;
+    if (!value) return null;
+    const timestamp = new Date(value);
+    return (
+      Number.isFinite(timestamp.getTime()) &&
+      timestamp <= now &&
+      now.getTime() - timestamp.getTime() <= days * 86400000
+    );
+  },
   tenant_contact: (r) =>
     r.source === "tenancy"
       ? Boolean(r.payload.email?.trim() && r.payload.phone?.trim())
@@ -70,7 +80,9 @@ export function evaluate(rules: QualityRule[], rows: Candidate[], now: Date) {
     const params = rule.parameters as { days?: unknown };
     const days = Number(params.days ?? 0);
     if (
-      (rule.code === "overdue_dues" || rule.code === "open_request") &&
+      ["overdue_dues", "open_request", "source_freshness"].includes(
+        rule.code,
+      ) &&
       (!Number.isInteger(days) || days < 0 || days > 3650)
     )
       throw new ApiError(

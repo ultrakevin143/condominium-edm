@@ -2,12 +2,16 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { PrismaClient } from "@prisma/client";
-import { loadEnvironment } from "../src/config/environment.js";
+import {
+  loadEnvironment,
+  loadMigrationEnvironment,
+} from "../src/config/environment.js";
 import { assertNeonConfiguration } from "../src/config/database-safety.js";
 import { provisionAccess, roleDefinitions } from "../prisma/seed-data.js";
 import { verifyPassword } from "../src/shared/security.js";
 
 loadEnvironment();
+loadMigrationEnvironment();
 assertNeonConfiguration();
 const password = process.env.SEED_PASSWORD;
 if (!password || password.length < 12)

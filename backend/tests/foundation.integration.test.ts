@@ -135,7 +135,7 @@ test("fresh local migration and fictional seed foundation", async (t) => {
             .filter((c) => c.entity === "VisitorEntry")
             .every((c) => c.classification === "RESTRICTED"),
         );
-        assert.equal(await db.qualityRule.count(), 13);
+        assert.equal(await db.qualityRule.count(), 14);
         assert.equal(
           new Set((await db.qualityRule.findMany()).map((r) => r.dimension))
             .size,

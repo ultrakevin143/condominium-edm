@@ -23,3 +23,22 @@ export function loadEnvironment(local = false) {
   config({ path: file, quiet: true, override: true });
   return file;
 }
+
+export function loadMigrationEnvironment() {
+  const root =
+    path.basename(process.cwd()) === "backend"
+      ? path.resolve("..")
+      : process.cwd();
+  const file = path.join(root, ".local/neon-migration.env");
+  if (!existsSync(file))
+    throw new Error(
+      "Create the ignored .local/neon-migration.env with Bern's direct migration credential.",
+    );
+  delete process.env.DIRECT_URL;
+  const result = config({ path: file, quiet: true, override: true });
+  if (result.error)
+    throw new Error("Could not load Bern's private migration environment.");
+  if (!process.env.DIRECT_URL)
+    throw new Error("The private migration environment must define DIRECT_URL.");
+  return file;
+}

@@ -74,6 +74,13 @@ export const tenantNames = [
 // belong to rule rows so they can be inspected alongside the saved results.
 export const ruleDefinitions = [
   {
+    code: "source_freshness",
+    title: "Provider update timestamp is recent",
+    dimension: "timeliness",
+    severity: "warning",
+    parameters: { days: 30 },
+  },
+  {
     code: "record_validity",
     title: "Record meets canonical loading requirements",
     dimension: "validity",

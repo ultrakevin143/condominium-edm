@@ -44,7 +44,9 @@ npm run dev:local
 
 `setup:local` creates the ignored root `.env`, preserved `.local/local.env`, and private `.local/development-access.txt` with generated local passwords on a fresh local setup. It preserves existing files. Local PostgreSQL uses port 54349 and database `bern_local`. Stop it with Ctrl+C. Migration/seed helpers remain local even when ordinary application startup uses Neon.
 
-The local seed creates five demo accounts, 30 distinct fictional tenant identities in 32 tenancy rows, 181 billing rows, 12 maintenance records and 12 visitor entries. Six complete months of dues include partial, paid and unpaid examples. It also creates 13 rule definitions and field catalog entries. Source defects include duplicates, a conflicting active lease, invalid dates/email/unit code, a negative payment, missing contact/start dates and a nonexistent referenced unit. Maria occurs in all four sources. Warehouse tables remain empty until an authorized user triggers the pipeline API.
+The local seed creates five demo accounts, 30 distinct fictional tenant identities in 32 tenancy rows, 181 billing rows, 12 maintenance records and 12 visitor entries. Six complete months of dues include partial, paid and unpaid examples. It also creates 14 rule definitions and field catalog entries. Source defects include duplicates, a conflicting active lease, invalid dates/email/unit code, a negative payment, missing contact/start dates and a nonexistent referenced unit. Maria occurs in all four sources. Warehouse tables remain empty until an authorized user triggers the pipeline API.
+
+Source records can optionally store a verified provider update timestamp. The freshness rule checks supplied timestamps against its configured 30-day window. Missing timestamps are unobserved, not counted as fresh or stale. The source freshness migration must be reviewed and applied before running this version against an existing database; automated tests apply it only to an isolated local database.
 
 Seeding twice preserves later edits, policies and account passwords. These are source simulations; nothing is a real resident, visitor or financial record.
 
