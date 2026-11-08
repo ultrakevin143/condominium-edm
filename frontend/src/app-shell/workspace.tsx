@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   GitMerge,
@@ -22,6 +23,7 @@ import { GovernanceScreen } from "../features/governance/governance.screen";
 import { AccountScreen } from "../features/account/account.screen";
 import { RecoveryForm } from "../features/account/recovery-form";
 export function Workspace({ section }: { section: string }) {
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
@@ -43,6 +45,54 @@ export function Workspace({ section }: { section: string }) {
   useEffect(() => {
     void session();
   }, []);
+  const tabs = profile
+    ? [
+        {
+          key: "pipeline",
+          label: "Pipeline",
+          icon: GitMerge,
+          permission: "quality:read",
+        },
+        {
+          key: "tenants",
+          label: "Tenants & units",
+          icon: Users,
+          permission: "tenants:read",
+        },
+        {
+          key: "quality",
+          label: "Data quality",
+          icon: ListChecks,
+          permission: "quality:read",
+        },
+        {
+          key: "issues",
+          label: "Issue queue",
+          icon: ClipboardList,
+          permission: "quality:manage",
+        },
+        {
+          key: "governance",
+          label: "Governance",
+          icon: ShieldCheck,
+          permission: "governance:read",
+        },
+        {
+          key: "account",
+          label: "Account security",
+          icon: KeyRound,
+          permission: "tenants:read",
+        },
+      ].filter((t) => profile.permissions.includes(t.permission))
+    : [];
+  const requestedTabIsAllowed = tabs.some((t) => t.key === section),
+    isHome = section === "home",
+    current =
+      isHome || !requestedTabIsAllowed ? tabs[0]?.key : section;
+  useEffect(() => {
+    if (profile && !isHome && !requestedTabIsAllowed && current)
+      router.replace(`/${current}`);
+  }, [current, isHome, profile, requestedTabIsAllowed, router]);
   async function logout() {
     try {
       await send("/auth/logout");
@@ -69,45 +119,6 @@ export function Workspace({ section }: { section: string }) {
         notice={notice}
       />
     );
-  const tabs = [
-    {
-      key: "pipeline",
-      label: "Pipeline",
-      icon: GitMerge,
-      permission: "quality:read",
-    },
-    {
-      key: "tenants",
-      label: "Tenants & units",
-      icon: Users,
-      permission: "tenants:read",
-    },
-    {
-      key: "quality",
-      label: "Data quality",
-      icon: ListChecks,
-      permission: "quality:read",
-    },
-    {
-      key: "issues",
-      label: "Issue queue",
-      icon: ClipboardList,
-      permission: "quality:manage",
-    },
-    {
-      key: "governance",
-      label: "Governance",
-      icon: ShieldCheck,
-      permission: "governance:read",
-    },
-    {
-      key: "account",
-      label: "Account security",
-      icon: KeyRound,
-      permission: "tenants:read",
-    },
-  ].filter((t) => profile.permissions.includes(t.permission));
-  const current = section === "home" ? tabs[0]?.key : section;
   const allowed = tabs.some((t) => t.key === current);
   return (
     <div className="workspace">

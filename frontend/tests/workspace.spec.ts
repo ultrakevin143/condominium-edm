@@ -182,8 +182,21 @@ test("steward and front desk sign in to their permitted workspaces and data", as
       page.getByRole("heading", { name: "Account security", exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
-    const denied = await page.request.get("/api/warehouse/tenants");
-    expect(denied.status()).toBe(401);
+    await expect(
+      page.getByRole("button", { name: "Sign in", exact: true }),
+    ).toBeVisible();
+    expect(
+      (await page.context().cookies()).some(
+        (cookie) => cookie.name === "bern_session",
+      ),
+    ).toBe(false);
+    const status = await page.evaluate(async () => {
+      const response = await fetch("/api/warehouse/tenants", {
+        credentials: "same-origin",
+      });
+      return response.status;
+    });
+    expect(status).toBe(401);
   }
 });
 
